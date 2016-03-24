@@ -68,7 +68,10 @@ void init_ran(int *ran, int size) {
     }
 }
 
-void entrypoint(void *arg) {
+int main (int argc, char ** argv) {
+    shmem_init ();
+    shmem_workers_init();
+
     int me, npes;
     struct utsname u;
 
@@ -96,11 +99,8 @@ void entrypoint(void *arg) {
     }
     free(ran);
     if(me == 0) printf("Passed\n");
-}
 
-int main (int argc, char ** argv) {
-    shmem_init ();
-    shmem_workers_init(&argc, argv, entrypoint, NULL);
+    shmem_workers_finalize();
     shmem_finalize ();
 
     return 0;
