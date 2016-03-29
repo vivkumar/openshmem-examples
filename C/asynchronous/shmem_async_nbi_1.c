@@ -57,6 +57,31 @@ void async_fct(void * arg) {
     ran = 1;
 }
 
+#ifndef HCLIB_COMM_WORKER_FIXED
+void entrypoint(void *arg) {
+    int me, npes;
+    struct utsname u;
+
+    uname (&u);
+
+    me = shmem_my_pe ();
+    npes = shmem_n_pes ();
+    printf ("%s: Hello from PE %4d of %4d\n", u.nodename, me, npes);
+    printf("hclib workers = %d\n", shmem_n_workers());
+    shmem_task_nbi(async_fct, NULL, NULL);
+    shmem_barrier_all();
+    assert(ran == 1);
+    if(me == 0) printf("Passed\n");
+}
+
+int main (int argc, char ** argv) {
+    shmem_init ();
+    shmem_workers_init(entrypoint, NULL);
+    shmem_finalize ();
+
+    return 0;
+}
+#else
 int main (int argc, char ** argv) {
     shmem_init ();
     shmem_workers_init();
@@ -80,3 +105,4 @@ int main (int argc, char ** argv) {
 
     return 0;
 }
+#endif

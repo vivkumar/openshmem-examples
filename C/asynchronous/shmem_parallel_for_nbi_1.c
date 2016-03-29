@@ -68,6 +68,45 @@ void init_ran(int *ran, int size) {
     }
 }
 
+#ifndef HCLIB_COMM_WORKER_FIXED
+void entrypoint(void *arg) {
+    int me, npes;
+    struct utsname u;
+
+    uname (&u);
+   
+    me = shmem_my_pe ();
+    npes = shmem_n_pes ();
+    printf ("%s: Hello from PE %4d of %4d\n", u.nodename, me, npes);
+    printf("hclib workers = %d\n", shmem_n_workers());
+
+    int *ran=(int *)malloc(H1*sizeof(int));
+    init_ran(ran, H1);
+    int lowBound = 0;
+    int highBound = H1;
+    int stride = 1;
+    int tile_size = T1;
+    int loop_dimension = 1;
+    shmem_parallel_for_nbi(forasync_fct1, (void*)(ran), NULL, lowBound, highBound, stride, tile_size, loop_dimension, SHMEM_PARALLEL_FOR_RECURSIVE_MODE);
+
+    shmem_barrier_all();
+    int i = 0;
+    while(i < H1) {
+        assert(ran[i] == i);
+        i++;
+    }
+    free(ran);
+    if(me == 0) printf("Passed\n");
+}
+
+int main (int argc, char ** argv) {
+    shmem_init ();
+    shmem_workers_init(entrypoint, NULL);
+    shmem_finalize ();
+
+    return 0;
+}
+#else
 int main (int argc, char ** argv) {
     shmem_init ();
     shmem_workers_init();
@@ -105,3 +144,4 @@ int main (int argc, char ** argv) {
 
     return 0;
 }
+#endif
