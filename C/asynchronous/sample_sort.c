@@ -112,7 +112,7 @@ void par_sort(void* arg) {
 
   if (right - left + 1 > HC_GRANULARITY) {
     int index = partition(data, left, right);
-    shmem_start_finish();
+    shmem_task_scope_begin();
     if (left < index - 1) {
       sort_data_t* buf = (sort_data_t*) malloc(sizeof(sort_data_t)); 
       buf->buffer = data;
@@ -127,7 +127,7 @@ void par_sort(void* arg) {
       buf->right = right; 
       shmem_task_nbi(par_sort, buf, NULL);
     }
-    shmem_end_finish();
+    shmem_task_scope_end();
   }
   else {
     //  quicksort in C library
@@ -141,7 +141,7 @@ void sorting(TYPE* buffer, int size) {
   buf->buffer = buffer;
   buf->left = 0;
   buf->right = size - 1; 
-  par_sort(buf);
+  shmem_task_nbi(par_sort, buf, NULL);
 }
 #else
 void sorting(TYPE* buffer, int size) {
